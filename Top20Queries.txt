@@ -1,0 +1,239 @@
+*********************************************************************************************
+* Name: Nozomi Networks 20 Queries Video Series                                             *
+* Description: Text version of queries used in 20 Queries video series and docs.            *
+* Version: 25.x                                                                             *
+* Author: Nozomi Networks                                                                   *
+* Date: Aug2025                                                                             *
+*                                                                                           *
+* Query Layout:                                                                             *
+*                                                                                           *
+* Name: Query name                                                                          *
+* Description: Description of expected output from query                                    *
+* Platform: Platform the query has been tested on: Guardian, CMC, Vantage                   *
+* Version: N2QL version the query was written for and tested on                             *
+* Author: Who wrote the query                                                               *
+* Date: Date the query entry was written                                                    *
+*                                                                                           *
+* Notes:                                                                                    *
+*                                                                                           *
+* Most queries can be made to work in any platform if the syntax is changed. Just because   *
+* a query says "Guardian, CMC" does not mean it won't work in Vantage, but it will require  *
+* some changes to work in Vantage.                                                          *
+*                                                                                           *
+* In may cases, these queries will work when pasted directly, however some of these example *
+* queries contain custom fields, renamed fields or other parameters which may need to be    *
+* changed to work in your environment.                                                      *
+*                                                                                           *
+*********************************************************************************************
+
+
+Name: Top10AlertsPieChart
+Description: Display top 10 alerts by count, display as pie chart
+Platform: Guardian, CMC, Vantage
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+alerts | group_by type_id | sort count desc | head | pie type_id count
+
+
+Name: TrafficBetweenTwoZones
+Description: Display link information for traffic between two zones
+Platform: Guardian, CMC
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+links | join nodes to ip | join nodes from ip | select from joined_node_from_ip.label->from_label joined_node_from_ip.zone->from_zone to joined_node_to_ip.label->to_label joined_node_to_ip.zone->to_zone protocol tcp_connection_attempts.total tcp_handshaked_connections.total last_activity_time | sort last_activity_time desc | where from_zone include? Corp | where to_zone include? Prod 
+
+
+Name: TrafficToPublicInternet
+Description: Display link information for traffic to public internet IP addresses
+Platform: Guardian, CMC
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+links | join nodes to ip | where joined_node_to_ip.is_public | select from to joined_node_to_ip.label protocol tcp_connection_attempts.total tcp_handshaked_connections.total | select from to tcp_connection_attempts_total | group_by from | head 25 | sort count desc | column from count 
+
+
+Name: TrafficOverVNCorRDP
+Description: Display link information for traffic using the VNC or RDP protcols
+Platform: Guardian, CMC
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+links | where protocol == vnc OR protocol == rdp | join nodes to ip | select from to joined_node_to_ip.label protocol transferred.bytes | join nodes from ip | select coalesce(joined_node_from_ip.label,from)->from coalesce(joined_node_to_ip_label,to)->to protocol transferred_bytes | group_by to sum transferred_bytes | select to sum->dst_transferred_bytes | sort dst_transferred_bytes desc | head 25 | column to dst_transferred_bytes 
+
+
+Name: InternetTrafficVolume
+Description: Use Link information to calculate the sum of traffic to the public internet
+Platform: Guardian, CMC
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+links | where is_to_public = true | select concat(from,"-",to)->my_link transferred.bytes | group_by my_link sum transferred_bytes | select my_link sum->transferred_bytes | sort transferred_bytes desc | head | column my_link transferred_bytes 
+
+
+Name: InternetTrafficVolume
+Description: Use Link information to calculate the sum of traffic to the public internet
+Platform: Guardian, CMC
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+links | where is_to_public = true | select concat(from,"-",to)->my_link transferred.bytes | group_by my_link sum transferred_bytes | select my_link sum->transferred_bytes | sort transferred_bytes desc | head | column my_link transferred_bytes 
+
+
+Name: UnresolvedCVEsonAsset
+Description: Display unresolved CVE information for a specified node
+Platform: Guardian, CMC
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+node_cves | where node_id == 192.168.20.100 | where resolved == false | where cve_is_kev = true | select cve cve_is_kev cve_score cve_summary | sort cve_score desc 
+
+
+Name: ProtocolTrafficSums
+Description: Display column chart of traffic by protocol
+Platform: Guardian, CMC
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+links | group_by protocol sum transferred.bytes | sort sum desc | select protocol sum->transferred_bytes | head 15 | column protocol transferred_bytes
+
+
+Name: TrendTotalUnresolvedVulnsOverTime
+Description: Display a history trend of unresolved vulnerabilities over time
+Platform: Guardian, CMC
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+node_cves | where resolved = false | bucket record_created_at 604800000 | sort record_created_at | where record_created_at != 0 | history count record_created_at 
+
+
+Name: TrendTotalUnresolvedVulnsOverTime
+Description: Display a column chart of the most common MITRE ATT&CK tactics
+Platform: Guardian, CMC
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+alerts | where is_empty(mitre_attack_tactics) == false | group_by concat(mitre_attack_tactics,"-",mitre_attack_techniques)->tech | sort tech asc | column_colored_by_label tech count 
+
+
+Name: TrafficByProtocolFunctionCode
+Description: Display details about a specific protocol function code 
+Platform: Guardian, CMC
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+links | where protocol == modbus | expand function_codes | where expanded_function_codes.name == 4 | select from to last_activity_time transferred.bytes 
+
+
+Name: AlertsBySpecificTime
+Description: Display alert details for a specific time 
+Platform: Guardian, CMC
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+alerts |select type_id->alert_type id->alert_id created_time->time ip_src->source ip_dst->destination | sort created_time | where created_time >= 1699920000000 | where created_time <= 1700006399000 
+
+
+Name: NewAssetsOver7Days
+Description: Display alert details for a specific time 
+Platform: Guardian, CMC
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+assets | where days_ago(created_at) <= 7 | select name ip mac_address mac_ vendor protocols created_at->appearance_time | sort appearance_time asc
+
+
+Name: CVEsOveraMonthOld
+Description: Display details for unresolved CVEs created in the last 30 days 
+Platform: Guardian, CMC
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+node_cves | join nodes node_id id | where joined_node_node_id_id.is_public == false | where days_ago(cve_creation_time) > 30 | where resolved == false | select cve coalesce(node_label,node_id)->asset_label cve_score cwe_name record_created_at matching_cpes | sort cve_score desc  
+
+
+Name: TrafficBlockedByFirewall
+Description: Display details for links with traffic which may have been blocked by a firewall 
+Platform: Guardian, CMC
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+links | expand transport_protocols | where tcp_connection_attempts.total >= 1 | where tcp_handshaked_connections.total == 0 | select from to transport_protocol protocol last_activity_time 
+
+
+Name: TrafficCrossingPurdueLevels
+Description: Display details for links with traffic which crosses Purdue Model levels 
+Platform: Guardian, CMC
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+links | where from_zone != $to_zone | where to != 0.0.0.0 | where to exclude? "224.0.0" | where to exclude? "255.255.255.255" | join nodes from ip | join nodes to ip | select from to protocol joined_node_from_ip.level->src_level joined_node_to_ip.level->dst_level  from_zone to_zone | select from to protocol dst_level src_level dist(dst_level,src_level) from_zone to_zone |  where dst_level_src_level_dist > 1 | sort dst_level_src_level_dist desc 
+
+
+Name: ActiveICMPTraffic
+Description: Display details for sessions with active ICMP traffic 
+Platform: Guardian, CMC
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+sessions | where protocol == icmp | where status == ACTIVE | where transferred.bytes > 1000 | where seconds_ago(last_activity_time) < 10 
+
+
+Name: VulnsByDevice
+Description: Display vulnerability details by device 
+Platform: Guardian, CMC
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+node_cves | where node_label != "" | where resolved != true | select node_label->asset_name cve time cwe_id cwe_name matching_cpes likelihood resolved resolution_reason resolved_source installed_on appliance_id appliance_ip appliance_host zone asset_id node_label node_type node_vendor node_product_name node_firmware_version node_os resolution_status minimum_hotfix latest_hotfix cve_summary cve_references cve_score cve_creation_time cve_update_time cve_source | sort asset_name asc
+
+
+Name: LicencesByAppliance
+Description: Display vulnerability details by device 
+Platform: CMC
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+appliances | select info.host info.license_threat_intelligence info.license_asset_intelligence info.license_base info.license_smart_polling | select info.host->Guardian_HOSTNAME info.license_base.license_machine_id->Machine-ID info.license_base.extra.supported_nodes->Supported_NODES info.license_base.bundle_name->Bundle_NAME info.license_base.extra.expire_date->Base_Expiry_date info.license_threat_intelligence.extra.expire_date->TI_expiry_date info.license_asset_intelligence.extra.expire_date->AI_expiry_date 
+
+
+Name: PossibleMultihomedAssets
+Description: Display Assets which host more than one Node - possibly multihomed
+Platform: Guardian, CMC
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+assets | where size(nodes) > 1 | join nodes ip ip | where seconds_ago(joined_node_ip_ip.first_activity_time) > 30 | select name nodes joined_node_ip_ip.created_at | where joined_node_ip_ip_created_at != never | sort joined_node_node_id_created_at asc | uniq  
+
+
+Name: AssetsPerSubnet
+Description: Display asset counts per subnet based on IP addresses.
+Platform: Guardian, CMC
+Version: 25.x
+Author: Nozomi Networks
+Date: Aug2025
+
+nodes | where is_public != true | where is_broadcast != true | where ipv4(ip) != "" | select ip id split(ip,.,0)->first_octet split(ip,.,1)->second_octet split(ip,.,2)->third_octet | select concat(first_octet,".",second_octet,".",third_octet,".0/24")->subnet | group_by subnet | sort count desc
+
+
