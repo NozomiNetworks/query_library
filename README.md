@@ -1,4 +1,4 @@
-# Query Examples Repository for OT/ICS Cybersecurity Product 🔒
+# Example N2QL Query Library 🔒
 
 This repository contains a collection of example queries designed for use with Nozomi Networks products. These examples are intended to help users understand and leverage the Nozomi Networks Query Language, to aid in detecting and investigating threats in industrial environments.
 
